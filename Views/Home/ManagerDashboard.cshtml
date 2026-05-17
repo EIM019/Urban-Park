@@ -1,0 +1,157 @@
+@model CarparkManagementSystem.ViewModels.Home.ManagerDashboardViewModel
+@{
+    ViewData["Title"] = "Manager Dashboard";
+}
+
+<section class="hero-panel">
+    <div class="hero-panel__content">
+        <span class="eyebrow">Facilities Manager dashboard</span>
+        <h1>Monitor all bookings, priority reservations and site availability.</h1>
+        <p>Override, edit, or cancel any booking across all sites and spaces.</p>
+        <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" asp-controller="Availability" asp-action="Search">Search availability</a>
+            <a class="btn btn-outline-light btn-lg" asp-controller="Layouts" asp-action="Index">Review layouts</a>
+            <a class="btn btn-outline-light btn-lg position-relative"
+               asp-controller="Notifications" asp-action="Index">
+                Notifications
+                @if (Model.UnreadNotificationCount > 0)
+                {
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        @Model.UnreadNotificationCount
+                    </span>
+                }
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="stats-grid">
+    <article class="metric-card">
+        <span class="metric-card__label">Active priority bookings</span>
+        <strong>@Model.PriorityBookingCount</strong>
+        <p>Bookings currently marked as priority.</p>
+    </article>
+    <article class="metric-card">
+        <span class="metric-card__label">Sites with low availability</span>
+        <strong>@Model.SitesWithLowAvailability</strong>
+        <p>Fewer than 5 free spaces in next 8 hours.</p>
+    </article>
+    <article class="metric-card">
+        <span class="metric-card__label">Unread notifications</span>
+        <strong>@Model.UnreadNotificationCount</strong>
+        <p>Notifications awaiting your review.</p>
+    </article>
+</section>
+
+@* All bookings table *@
+<section class="section-shell">
+    <div class="section-shell__heading">
+        <div>
+            <span class="eyebrow">All bookings</span>
+            <h2>System-wide booking management</h2>
+        </div>
+        <a class="btn btn-primary" asp-controller="Availability" asp-action="Search">
+            + New booking
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Site / Space</th>
+                    <th>Requester</th>
+                    <th>Type</th>
+                    <th>Window</th>
+                    <th>Created by</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var booking in Model.AllBookings)
+                {
+                    <tr>
+                        <td class="text-muted small">@booking.Id</td>
+                        <td>
+                            <span class="fw-semibold">@booking.SiteName</span>
+                            <br><small class="text-muted">Bay @booking.SpaceNumber</small>
+                        </td>
+                        <td>
+                            @booking.RequesterName
+                            @if (booking.IsPriority)
+                            {
+                                <span class="status-badge status-badge--priority ms-1">Priority</span>
+                            }
+                            @if (booking.IsOverrideReplacement && !string.IsNullOrEmpty(booking.OverriddenRequesterName))
+                            {
+                                <br>
+                                <small class="text-muted">
+                                    <span class="text-danger">⬆ Replaced:</span> @booking.OverriddenRequesterName
+                                </small>
+                            }
+                        </td>
+                        <td>@booking.PartyTypeLabel</td>
+                        <td class="small">
+                            @booking.StartDisplay<br>
+                            <span class="text-muted">→ @booking.EndDisplay</span>
+                        </td>
+                        <td class="small">
+                            @booking.CreatedByName
+                            <br><span class="text-muted">@booking.CreatedByRole</span>
+                        </td>
+                        <td>
+                            <span class="status-badge @booking.StatusClass">@booking.StatusLabel</span>
+                            @if (booking.IsOverrideReplacement)
+                            {
+                                <br><small class="text-warning">Priority override</small>
+                            }
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1 flex-wrap">
+                                @* View *@
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   asp-controller="Bookings"
+                                   asp-action="Details"
+                                   asp-route-id="@booking.Id"
+                                   title="View details">View</a>
+
+                                @if (booking.StatusLabel == "Active")
+                                {
+                                    @* Edit *@
+                                    <a class="btn btn-sm btn-outline-primary"
+                                       asp-controller="Bookings"
+                                       asp-action="Edit"
+                                       asp-route-id="@booking.Id"
+                                       title="Edit booking">Edit</a>
+
+                                    @* Override — only non-priority active bookings *@
+                                    @if (booking.CanOverride)
+                                    {
+                                        <a class="btn btn-sm btn-warning"
+                                           asp-controller="Bookings"
+                                           asp-action="Override"
+                                           asp-route-id="@booking.Id"
+                                           title="Override with priority booking">Override</a>
+                                    }
+
+                                    @* Cancel *@
+                                    <form method="post"
+                                          asp-controller="Bookings"
+                                          asp-action="Cancel"
+                                          asp-route-id="@booking.Id"
+                                          onsubmit="return confirm('Cancel booking #@booking.Id for @booking.RequesterName?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-danger"
+                                                title="Cancel booking">Cancel</button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

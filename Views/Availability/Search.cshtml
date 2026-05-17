@@ -1,0 +1,151 @@
+@model CarparkManagementSystem.ViewModels.Availability.AvailabilitySearchViewModel
+@using CarparkManagementSystem.Models
+@{
+    ViewData["Title"] = "Availability Search";
+}
+
+<section class="section-shell">
+    <div class="section-shell__heading">
+        <div>
+            <span class="eyebrow">Search</span>
+            <h1>Find available bays by site, date, and requirement</h1>
+        </div>
+    </div>
+
+    <form method="get" class="row g-3">
+        <div class="col-md-3">
+            <label asp-for="SiteId" class="form-label"></label>
+            <select asp-for="SiteId" asp-items="Model.SiteOptions" class="form-select"></select>
+            <span asp-validation-for="SiteId" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="StartDateTime" class="form-label"></label>
+            <input asp-for="StartDateTime" class="form-control" type="datetime-local" />
+            <span asp-validation-for="StartDateTime" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="EndDateTime" class="form-label"></label>
+            <input asp-for="EndDateTime" class="form-control" type="datetime-local" />
+            <span asp-validation-for="EndDateTime" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="SpaceType" class="form-label"></label>
+            <select asp-for="SpaceType" asp-items="Model.SpaceTypeOptions" class="form-select"></select>
+        </div>
+        <div class="col-12 d-flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-primary">Search availability</button>
+            @if (Model.SiteId.HasValue)
+            {
+                var routeStart = Model.StartDateTime?.ToString("yyyy-MM-ddTHH:mm");
+                var routeEnd = Model.EndDateTime?.ToString("yyyy-MM-ddTHH:mm");
+                <a class="btn btn-outline-primary"
+                   asp-controller="Layouts"
+                   asp-action="Details"
+                   asp-route-id="@Model.SiteId"
+                   asp-route-startDateTime="@routeStart"
+                   asp-route-endDateTime="@routeEnd">
+                    View matching layout
+                </a>
+            }
+        </div>
+    </form>
+
+    <p class="mt-3 mb-0 text-muted">@Model.StatusMessage</p>
+</section>
+
+<section class="section-shell">
+    <div class="section-shell__heading">
+        <div>
+            <span class="eyebrow">Results</span>
+            <h2>Available spaces</h2>
+        </div>
+    </div>
+
+    @if (Model.Results.Count == 0)
+    {
+        <div class="empty-state">
+            <h3>No spaces yet</h3>
+            <p>Run a search to see which spaces are free for your chosen period.</p>
+        </div>
+    }
+    else
+    {
+        <div class="site-card-grid">
+            @foreach (var result in Model.Results)
+            {
+                var bookingStart = Model.StartDateTime?.ToString("yyyy-MM-ddTHH:mm");
+                var bookingEnd = Model.EndDateTime?.ToString("yyyy-MM-ddTHH:mm");
+                <article class="site-card">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <span class="status-badge">@result.SiteName</span>
+                            <h3 class="mt-3">@result.SpaceNumber</h3>
+                            <p class="text-muted mb-0">@result.SpaceType.GetDisplayName()</p>
+                        </div>
+                        @if (Model.CanCreateBookings)
+                        {
+                            <a class="btn btn-primary btn-sm"
+                               asp-controller="Bookings"
+                               asp-action="Create"
+                               asp-route-siteId="@result.SiteId"
+                               asp-route-parkingSpaceId="@result.ParkingSpaceId"
+                               asp-route-startDateTime="@bookingStart"
+                               asp-route-endDateTime="@bookingEnd">
+                                Book space
+                            </a>
+                        }
+                    </div>
+                    <p class="mt-3 mb-0">@result.AvailabilityNote</p>
+                </article>
+            }
+        </div>
+    }
+</section>
+
+@* Inactive space notices — visible to all users *@
+@if (Model.InactiveSpacesWithNotes is not null && Model.InactiveSpacesWithNotes.Any())
+{
+    <section class="section-shell mt-4">
+        <div class="section-shell__heading">
+            <div>
+                <span class="eyebrow">Space notices</span>
+                <h2>Inactive spaces at this site</h2>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table app-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Space</th>
+                        <th>Reason</th>
+                        <th>Type</th>
+                        <th>Since</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var note in Model.InactiveSpacesWithNotes)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@note.SpaceNumber</td>
+                            <td>@note.Note</td>
+                            <td>
+                                <span class="status-badge @(note.IsPermanent ? "status-badge--cancelled" : "status-badge--warning")">
+                                    @note.StatusLabel
+                                </span>
+                            </td>
+                            <td class="small text-muted">
+                                @(note.InactiveSince.HasValue
+                                    ? note.InactiveSince.Value.ToString("dd MMM yyyy")
+                                    : "—")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

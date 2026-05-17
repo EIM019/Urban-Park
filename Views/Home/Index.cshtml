@@ -1,0 +1,56 @@
+@{
+    ViewData["Title"] = "Home";
+}
+
+<section class="hero-panel landing-hero">
+    <div class="hero-panel__content">
+        <span class="eyebrow">Smart parking operations</span>
+        <h1>Book your parking space with confidence.</h1>
+        <p>
+            Securely search available bays, reserve spaces by type, and keep site layouts visible for real-time operational decisions.
+        </p>
+        <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" asp-area="Identity" asp-page="/Account/Login">Sign in</a>
+            <a class="btn btn-outline-light btn-lg" asp-area="Identity" asp-page="/Account/Register">Register</a>
+        </div>
+    </div>
+    <div class="hero-panel__aside landing-hero-aside">
+        <div class="info-card info-card--light soft-glow">
+            <p class="card-label">What this system covers</p>
+            <h2>Availability, bookings, user access, and layouts</h2>
+            <p>Designed for operations teams that need a simple way to control parking and manage space status across multiple sites.</p>
+        </div>
+    </div>
+</section>
+
+<section class="section-shell landing-features">
+    <div class="section-shell__heading">
+        <div>
+            <span class="eyebrow">Parking types</span>
+            <h2>Find the right bay for every user</h2>
+        </div>
+    </div>
+
+    <div class="landing-card-grid">
+        <article class="landing-card">
+            <img class="landing-card__image" src="~/images/ev-charging.svg" alt="EV charging bay icon" />
+            <h3>EV charging bays</h3>
+            <p>Reserve electric vehicle spaces with charging support and keep them visible on the site map.</p>
+        </article>
+        <article class="landing-card">
+            <img class="landing-card__image" src="~/images/disabled-access.svg" alt="Disabled access bay icon" />
+            <h3>Disabled access bays</h3>
+            <p>Track accessible parking availability and manage bookings for staff or visitors who need priority access.</p>
+        </article>
+        <article class="landing-card">
+            <img class="landing-card__image" src="~/images/visitor.svg" alt="Visitor bay icon" />
+            <h3>Visitor bays</h3>
+            <p>Keep visitor parking separate and available with dedicated booking rules and flexible timing.</p>
+        </article>
+        <article class="landing-card">
+            <img class="landing-card__image" src="~/images/standard-space.svg" alt="Standard parking bay icon" />
+            <h3>Standard bays</h3>
+            <p>Manage everyday staff parking and spot availability at a glance for each site.</p>
+        </article>
+    </div>
+</section>

@@ -1,0 +1,253 @@
+@model CarparkManagementSystem.ViewModels.Home.ITDashboardViewModel
+@{
+    ViewData["Title"] = "IT Technician Dashboard";
+}
+
+<section class="hero-panel">
+    <div class="hero-panel__content">
+        <span class="eyebrow">IT support console</span>
+        <h1>Layout management and system health.</h1>
+        <p>
+            Configure parking layouts, activate or deactivate spaces, fix positioning issues,
+            and monitor recent booking activity.
+        </p>
+        <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" asp-controller="Layouts" asp-action="Index">
+                Manage layouts
+            </a>
+            <a class="btn btn-outline-light btn-lg" asp-controller="Bookings" asp-action="Index">
+                View bookings
+            </a>
+        </div>
+    </div>
+</section>
+
+@* Health stat cards *@
+<section class="stats-grid">
+    <article class="metric-card @(Model.InactiveSpaces > 0 ? "metric-card--warning" : "")">
+        <span class="metric-card__label">Inactive spaces</span>
+        <strong>@Model.InactiveSpaces</strong>
+        <p>Spaces currently disabled across all sites.</p>
+        @if (Model.InactiveSpaces > 0)
+        {
+            <a class="btn btn-sm btn-warning mt-2"
+               asp-controller="Layouts" asp-action="Index">Fix now</a>
+        }
+    </article>
+    <article class="metric-card @(Model.UnpositionedSpaces > 0 ? "metric-card--warning" : "")">
+        <span class="metric-card__label">Unpositioned spaces</span>
+        <strong>@Model.UnpositionedSpaces</strong>
+        <p>Spaces missing a grid row/column position.</p>
+        @if (Model.UnpositionedSpaces > 0)
+        {
+            <a class="btn btn-sm btn-warning mt-2"
+               asp-controller="Layouts" asp-action="Index">Assign positions</a>
+        }
+    </article>
+    <article class="metric-card @(Model.SitesNeedingLayoutReview > 0 ? "metric-card--warning" : "")">
+        <span class="metric-card__label">Sites needing review</span>
+        <strong>@Model.SitesNeedingLayoutReview</strong>
+        <p>Sites with inactive bays or missing layout data.</p>
+    </article>
+    <article class="metric-card">
+        <span class="metric-card__label">Healthy sites</span>
+        <strong>@Model.HealthySites / @Model.TotalSites</strong>
+        <p>Sites with no layout issues detected.</p>
+    </article>
+    <article class="metric-card">
+        <span class="metric-card__label">Total spaces</span>
+        <strong>@Model.TotalSpaces</strong>
+        <p>Across all registered sites in the system.</p>
+    </article>
+    <article class="metric-card">
+        <span class="metric-card__label">System status</span>
+        <strong>@Model.SystemStatusMessage</strong>
+        <p>Current health and configuration summary.</p>
+    </article>
+</section>
+
+@* Per-site health breakdown *@
+<section class="section-shell">
+    <div class="section-shell__heading">
+        <div>
+            <span class="eyebrow">Layout health</span>
+            <h2>Site-by-site review</h2>
+        </div>
+        <a class="btn btn-primary" asp-controller="Layouts" asp-action="Index">
+            Open layout editor
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Site</th>
+                    <th>Total spaces</th>
+                    <th>Inactive</th>
+                    <th>Unpositioned</th>
+                    <th>Health</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var site in Model.SiteHealthSummary)
+                {
+                    <tr class="@(site.HasIssues ? "table-warning" : "")">
+                        <td class="fw-semibold">@site.SiteName</td>
+                        <td>@site.TotalSpaces</td>
+                        <td>
+                            @if (site.InactiveSpaces > 0)
+                            {
+                                <span class="text-danger fw-semibold">@site.InactiveSpaces</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">0</span>
+                            }
+                        </td>
+                        <td>
+                            @if (site.UnpositionedSpaces > 0)
+                            {
+                                <span class="text-warning fw-semibold">@site.UnpositionedSpaces</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">0</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="status-badge @site.HealthClass">@site.HealthLabel</span>
+                        </td>
+                        <td>
+                            <a class="btn btn-sm btn-outline-primary"
+                               asp-controller="Layouts"
+                               asp-action="Edit"
+                               asp-route-siteId="@site.SiteId">
+                                Edit layout
+                            </a>
+                            <a class="btn btn-sm btn-outline-secondary"
+                               asp-controller="Layouts"
+                               asp-action="Details"
+                               asp-route-id="@site.SiteId">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@* Recent bookings — read-only reference for IT support *@
+<section class="section-shell">
+    <div class="section-shell__heading">
+        <div>
+            <span class="eyebrow">Recent activity</span>
+            <h2>Latest active reservations</h2>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Site / Space</th>
+                    <th>Requester</th>
+                    <th>Type</th>
+                    <th>Window</th>
+                    <th>Created by</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var booking in Model.RecentBookings)
+                {
+                    <tr>
+                        <td class="text-muted
+                {
+                    <tr>
+                        <td class="text-muted small">@booking.Id</td>
+                        <td>
+                            <span class="fw-semibold">@booking.SiteName</span>
+                            <br><small class="text-muted">Bay @booking.SpaceNumber</small>
+                        </td>
+                        <td>
+                            @booking.RequesterName
+                            @if (booking.IsPriority)
+                            {
+                                <span class="status-badge status-badge--priority ms-1">Priority</span>
+                            }
+                            @if (booking.IsOverrideReplacement && !string.IsNullOrEmpty(booking.OverriddenRequesterName))
+                            {
+                                <br>
+                                <small class="text-muted">
+                                    <span class="text-danger">⬆ Replaced:</span> @booking.OverriddenRequesterName
+                                </small>
+                            }
+                        </td>
+                        <td>@booking.PartyTypeLabel</td>
+                        <td class="small">
+                            @booking.StartDisplay<br>
+                            <span class="text-muted">→ @booking.EndDisplay</span>
+                        </td>
+                        <td class="small">
+                            @booking.CreatedByName
+                            <br><span class="text-muted">@booking.CreatedByRole</span>
+                        </td>
+                        <td>
+                            <span class="status-badge @booking.StatusClass">@booking.StatusLabel</span>
+                            @if (booking.IsOverrideReplacement)
+                            {
+                                <br><small class="text-warning">Priority override</small>
+                            }
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1 flex-wrap">
+                                @* View *@
+                                <a class="btn btn-sm btn-outline-secondary"
+                                   asp-controller="Bookings"
+                                   asp-action="Details"
+                                   asp-route-id="@booking.Id"
+                                   title="View details">View</a>
+
+                                @if (booking.StatusLabel == "Active")
+                                {
+                                    @* Edit *@
+                                    <a class="btn btn-sm btn-outline-primary"
+                                       asp-controller="Bookings"
+                                       asp-action="Edit"
+                                       asp-route-id="@booking.Id"
+                                       title="Edit booking">Edit</a>
+
+                                    @* Override — only non-priority active bookings *@
+                                    @if (booking.CanOverride)
+                                    {
+                                        <a class="btn btn-sm btn-warning"
+                                           asp-controller="Bookings"
+                                           asp-action="Override"
+                                           asp-route-id="@booking.Id"
+                                           title="Override with priority booking">Override</a>
+                                    }
+
+                                    @* Cancel *@
+                                    <form method="post"
+                                          asp-controller="Bookings"
+                                          asp-action="Cancel"
+                                          asp-route-id="@booking.Id"
+                                          onsubmit="return confirm('Cancel booking #@booking.Id for @booking.RequesterName?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-danger"
+                                                title="Cancel booking">Cancel</button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

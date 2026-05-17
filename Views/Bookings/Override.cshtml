@@ -1,0 +1,101 @@
+@model CarparkManagementSystem.ViewModels.Bookings.OverrideBookingViewModel
+@{
+    ViewData["Title"] = "Override Booking";
+}
+
+<section class="hero-panel">
+    <div class="hero-panel__content">
+        <span class="eyebrow">Manager action</span>
+        <h1>Override booking</h1>
+        <p>
+            The original booking will be marked as <strong>Overridden</strong> and its creator
+            will be notified. A new priority booking will be created for the space.
+        </p>
+    </div>
+</section>
+
+<section class="section-shell">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            @*-- Original booking context --*@
+            <div class="card mb-4 border-warning">
+                <div class="card-header bg-warning bg-opacity-10 text-warning-emphasis fw-semibold">
+                    Original booking — will be marked as Overridden
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0 small">
+                        <dt class="col-sm-3">Site / Space</dt>
+                        <dd class="col-sm-9">@Model.SiteName — Bay @Model.SpaceNumber</dd>
+                        <dt class="col-sm-3">Booked for</dt>
+                        <dd class="col-sm-9">@Model.OriginalRequester</dd>
+                        <dt class="col-sm-3">Created by</dt>
+                        <dd class="col-sm-9">@Model.OriginalCreatedBy</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="OriginalBookingId" />
+
+                <h5 class="mb-3">New priority booking details</h5>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="StartDateTime" class="form-label"></label>
+                        <input asp-for="StartDateTime" type="datetime-local" class="form-control" />
+                        <span asp-validation-for="StartDateTime" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="EndDateTime" class="form-label"></label>
+                        <input asp-for="EndDateTime" type="datetime-local" class="form-control" />
+                        <span asp-validation-for="EndDateTime" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="RequesterName" class="form-label"></label>
+                    <input asp-for="RequesterName" class="form-control" placeholder="e.g. Jane Smith" />
+                    <span asp-validation-for="RequesterName" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="PartyType" class="form-label"></label>
+                    <select asp-for="PartyType" asp-items="Model.PartyTypeOptions" class="form-select"></select>
+                </div>
+
+                <div class="mb-3" id="empGroup">
+                    <label asp-for="EmployeeNumber" class="form-label"></label>
+                    <input asp-for="EmployeeNumber" class="form-control" placeholder="e.g. EMP-0042" />
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="ContactNumber" class="form-label"></label>
+                    <input asp-for="ContactNumber" class="form-control" placeholder="e.g. 07700 900123" />
+                    <span asp-validation-for="ContactNumber" class="text-danger small"></span>
+                </div>
+
+                <div class="d-flex gap-2 align-items-center">
+                    <button type="submit" class="btn btn-danger">
+                        Confirm override &amp; create priority booking
+                    </button>
+                    <a class="btn btn-outline-secondary"
+                       asp-controller="Bookings" asp-action="Index">Cancel</a>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const sel = document.getElementById('PartyType');
+        const emp = document.getElementById('empGroup');
+        function toggle() { emp.style.display = sel.value === 'Employee' ? '' : 'none'; }
+        sel?.addEventListener('change', toggle);
+        toggle();
+    </script>
+}

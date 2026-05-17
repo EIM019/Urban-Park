@@ -1,0 +1,75 @@
+@model IEnumerable<CarparkManagementSystem.ViewModels.Notifications.NotificationViewModel>
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<section class="hero-panel hero-panel--compact">
+    <div class="hero-panel__content">
+        <span class="eyebrow">Your inbox</span>
+        <h1>Notifications</h1>
+    </div>
+</section>
+
+<section class="section-shell">
+    @if (!Model.Any())
+    {
+        <p class="text-muted">No notifications yet.</p>
+    }
+    else
+    {
+        <form method="post" asp-action="MarkAllRead" class="mb-3 text-end">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                Mark all as read
+            </button>
+        </form>
+
+        <ul class="list-group list-group-flush">
+            @foreach (var n in Model)
+            {
+                <li class="list-group-item @(n.IsRead ? "" : "bg-warning bg-opacity-10")">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <strong>@n.Title</strong>
+                                @if (!n.IsRead)
+                                {
+                                    <span class="badge bg-danger">New</span>
+                                }
+                            </div>
+                            <p class="mb-2">@n.Message</p>
+                            <small class="text-muted">@n.CreatedDisplay</small>
+
+                            @if (n.RelatedBookingId.HasValue)
+                            {
+                                <div class="mt-2 d-flex gap-2 flex-wrap">
+                                    <a class="btn btn-sm btn-outline-secondary"
+                                    asp-controller="Bookings"
+                                    asp-action="Details"
+                                    asp-route-id="@n.RelatedBookingId">
+                                        View original booking
+                                    </a>
+                                    @* Prompt to find a new space for the displaced person *@
+                                    <a class="btn btn-sm btn-primary"
+                                    asp-controller="Availability"
+                                    asp-action="Search">
+                                        Find alternative space →
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                        @if (!n.IsRead)
+                        {
+                            <form method="post" asp-action="MarkRead" asp-route-id="@n.Id" class="flex-shrink-0">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                    Mark read
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</section>

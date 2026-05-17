@@ -1,0 +1,56 @@
+%% ERD for Carpark Management System
+%% Edit this file in Mermaid app or any Mermaid editor.
+
+erDiagram
+    SITE {
+        int Id PK
+        string Code
+        string Name
+        int TotalSpaces
+    }
+
+    PARKING_SPACE {
+        int Id PK
+        int SiteId FK
+        string SpaceNumber
+        string Type
+        bool IsActive
+    }
+
+    BOOKING {
+        int Id PK
+        int SiteId FK
+        int ParkingSpaceId FK
+        string RequesterName
+        string PartyType
+        string EmployeeNumber
+        string Company
+        string ContactNumber
+        datetime StartDateTime
+        datetime EndDateTime
+        bool IsPriority
+        string Status
+        datetime CreatedUtc
+        datetime LastUpdatedUtc
+        string CreatedByUserId
+        string LastUpdatedByUserId
+    }
+
+    LAYOUT_POSITION {
+        int Id PK
+        int ParkingSpaceId FK
+        int Row
+        int Column
+    }
+
+    APPLICATION_USER {
+        string Id PK
+        string UserName
+        string Email
+    }
+
+    SITE ||--o{ PARKING_SPACE : contains
+    SITE ||--o{ BOOKING : receives
+    PARKING_SPACE ||--o{ BOOKING : has
+    PARKING_SPACE ||--|| LAYOUT_POSITION : maps_to
+    APPLICATION_USER ||--o{ BOOKING : audits

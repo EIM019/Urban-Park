@@ -1,0 +1,325 @@
+@model CarparkManagementSystem.ViewModels.Layouts.SiteLayoutViewModel
+@using CarparkManagementSystem.Models
+
+@{
+    ViewData["Title"] = $"{Model.SiteName} Layout";
+}
+
+<section class="section-shell">
+    <div class="section-shell__heading">
+        <div>
+            <span class="eyebrow">Layout Viewer</span>
+            <h1>@Model.SiteName</h1>
+        </div>
+
+        <div class="d-flex gap-2">
+            @{
+                var routeStart = Model.StartDateTime.ToString("yyyy-MM-ddTHH:mm");
+                var routeEnd = Model.EndDateTime.ToString("yyyy-MM-ddTHH:mm");
+            }
+
+            <a class="btn btn-outline-primary"
+               asp-controller="Availability"
+               asp-action="Search"
+               asp-route-siteId="@Model.SiteId"
+               asp-route-startDateTime="@routeStart"
+               asp-route-endDateTime="@routeEnd">
+                Search this window
+            </a>
+
+            @if (Model.CanEdit)
+            {
+                <a class="btn btn-outline-warning"
+                   asp-action="LendSpaces"
+                   asp-route-siteId="@Model.SiteId">
+                    Lend spaces
+                </a>
+
+                <a class="btn btn-primary"
+                   asp-action="Edit"
+                   asp-route-id="@Model.SiteId">
+                    Edit layout
+                </a>
+            }
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] is string successMsg)
+    {
+        <div class="alert alert-success shadow-sm">@successMsg</div>
+    }
+
+    @if (TempData["ErrorMessage"] is string errorMsg)
+    {
+        <div class="alert alert-danger shadow-sm">@errorMsg</div>
+    }
+
+    @if (TempData["StatusMessage"] is string statusMessage)
+    {
+        <div class="alert alert-info shadow-sm">@statusMessage</div>
+    }
+
+    <form method="get" class="row g-3">
+        <input type="hidden" name="id" value="@Model.SiteId" />
+
+        <div class="col-md-4">
+            <label asp-for="StartDateTime" class="form-label"></label>
+            <input asp-for="StartDateTime" class="form-control" type="datetime-local" />
+        </div>
+
+        <div class="col-md-4">
+            <label asp-for="EndDateTime" class="form-label"></label>
+            <input asp-for="EndDateTime" class="form-control" type="datetime-local" />
+        </div>
+
+        <div class="col-md-4 d-flex align-items-end">
+            <button type="submit" class="btn btn-outline-primary">
+                Refresh layout
+            </button>
+        </div>
+    </form>
+</section>
+
+<section class="stats-grid">
+    <article class="metric-card">
+        <span class="metric-card__label">Total bays</span>
+        <strong>@Model.TotalSpaces</strong>
+    </article>
+
+    <article class="metric-card">
+        <span class="metric-card__label">Available</span>
+        <strong>@Model.AvailableSpaces</strong>
+    </article>
+
+    <article class="metric-card">
+        <span class="metric-card__label">Booked</span>
+        <strong>@Model.BookedSpaces</strong>
+    </article>
+
+    <article class="metric-card">
+        <span class="metric-card__label">Priority bays in use</span>
+        <strong>@Model.PriorityBookedSpaces</strong>
+    </article>
+</section>
+
+<section class="section-shell">
+
+    <div class="layout-legend d-flex gap-2 flex-wrap mb-3" id="filterBar">
+        <button type="button" class="status-badge active-filter" data-filter="Available">
+            Available
+        </button>
+
+        <button type="button" class="status-badge status-badge--booked active-filter" data-filter="Booked">
+            Booked
+        </button>
+
+        <button type="button" class="status-badge status-badge--priority active-filter" data-filter="PriorityBooking">
+            Priority booking
+        </button>
+
+        <button type="button" class="status-badge status-badge--inactive active-filter" data-filter="Inactive">
+            Inactive
+        </button>
+
+        <button type="button" class="status-badge status-badge--ev active-filter" data-filter="EV">
+            EV
+        </button>
+
+        <button type="button" class="status-badge status-badge--disabled active-filter" data-filter="Disabled">
+            Disabled
+        </button>
+
+        <button type="button" class="status-badge status-badge--visitor active-filter" data-filter="Visitor">
+            Visitor
+        </button>
+
+        <button type="button" class="status-badge ms-auto" id="showAllFilters">
+            Show all
+        </button>
+    </div>
+
+    <div class="carpark-grid"
+         style="grid-template-columns: repeat(@Model.GridColumns, minmax(72px, 1fr));">
+
+        @foreach (var space in Model.Spaces)
+        {
+            var stateClass = !space.IsActive
+                ? "space-card--inactive"
+                : space.IsAvailable
+                    ? "space-card--available"
+                    : "space-card--booked";
+
+            var typeClass = space.SpaceType switch
+            {
+                ParkingSpaceType.ElectricCharging => "space-card--ev",
+                ParkingSpaceType.Disabled => "space-card--disabled",
+                ParkingSpaceType.Visitor => "space-card--visitor",
+                _ => string.Empty
+            };
+
+            var filterTags = new List<string>();
+
+            if (!space.IsActive)
+            {
+                filterTags.Add("Inactive");
+            }
+            else if (space.IsPriorityBooking)
+            {
+                filterTags.Add("PriorityBooking");
+            }
+            else if (!space.IsAvailable)
+            {
+                filterTags.Add("Booked");
+            }
+            else
+            {
+                filterTags.Add("Available");
+            }
+
+            if (space.SpaceType == ParkingSpaceType.ElectricCharging)
+            {
+                filterTags.Add("EV");
+            }
+
+            if (space.SpaceType == ParkingSpaceType.Disabled)
+            {
+                filterTags.Add("Disabled");
+            }
+
+            if (space.SpaceType == ParkingSpaceType.Visitor)
+            {
+                filterTags.Add("Visitor");
+            }
+
+            var inactiveTooltip = string.Empty;
+
+            if (!space.IsActive && !string.IsNullOrEmpty(space.InactiveNote))
+            {
+                var permanence = space.IsInactivePermanent ? "Permanent" : "Temporary";
+                var since = space.InactiveSince.HasValue
+                    ? " since " + space.InactiveSince.Value.ToString("dd MMM")
+                    : string.Empty;
+
+                inactiveTooltip = $"{space.InactiveNote} — {permanence}{since}";
+            }
+
+            var customBackground = string.IsNullOrWhiteSpace(space.CardBackgroundColor)
+                ? ""
+                : $"background-color:{space.CardBackgroundColor};";
+
+            var customTextColor = string.IsNullOrWhiteSpace(space.CardTextColor)
+                ? ""
+                : $"color:{space.CardTextColor};";
+
+            var customFontWeight = string.IsNullOrWhiteSpace(space.CardFontWeight)
+                ? ""
+                : $"font-weight:{space.CardFontWeight};";
+
+            <article class="space-card @stateClass @typeClass"
+                     style="
+                        grid-row:@space.Row;
+                        grid-column:@space.Column;
+                        @customBackground
+                        @customTextColor
+                        @customFontWeight
+                     "
+                     data-filters="@string.Join(" ", filterTags)">
+
+                <strong>@space.SpaceNumber</strong>
+
+                <span>@space.SpaceType.GetDisplayName()</span>
+
+                @if (!space.IsActive)
+                {
+                    <small class="text-warning d-block">Inactive</small>
+
+                    @if (!string.IsNullOrEmpty(space.InactiveNote))
+                    {
+                        <span title="@inactiveTooltip"
+                              style="cursor:help; font-size:0.85rem;"
+                              class="text-warning">
+                            ℹ
+                        </span>
+
+                        <small class="d-block" style="font-size:0.65rem; opacity:0.8;">
+                            @(space.IsInactivePermanent ? "Permanent" : "Temporary")
+                        </small>
+                    }
+                }
+                else
+                {
+                    <small>@space.BookingLabel</small>
+                }
+
+                @if (space.IsPriorityBooking)
+                {
+                    <span class="priority-flag">Priority</span>
+                }
+
+                @if (Model.CanEdit && space.IsActive)
+                {
+                    <a class="space-deactivate-btn"
+                       asp-controller="Layouts"
+                       asp-action="DeactivateSpace"
+                       asp-route-spaceId="@space.ParkingSpaceId"
+                       title="Deactivate this space">
+                        ⊘
+                    </a>
+                }
+            </article>
+        }
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const activeFilters = new Set([
+        'Available',
+        'Booked',
+        'PriorityBooking',
+        'Inactive',
+        'EV',
+        'Disabled',
+        'Visitor'
+    ]);
+
+    const filterBar = document.getElementById('filterBar');
+
+    filterBar.addEventListener('click', function (event) {
+        const button = event.target.closest('button');
+
+        if (!button) return;
+
+        if (button.id === 'showAllFilters') {
+            document.querySelectorAll('#filterBar [data-filter]').forEach(btn => {
+                activeFilters.add(btn.dataset.filter);
+                btn.classList.add('active-filter');
+            });
+
+            applyFilters();
+            return;
+        }
+
+        const filter = button.dataset.filter;
+        if (!filter) return;
+
+        if (activeFilters.has(filter)) {
+            activeFilters.delete(filter);
+            button.classList.remove('active-filter');
+        } else {
+            activeFilters.add(filter);
+            button.classList.add('active-filter');
+        }
+
+        applyFilters();
+    });
+
+    function applyFilters() {
+        document.querySelectorAll('.space-card[data-filters]').forEach(card => {
+            const tags = card.dataset.filters.split(' ');
+            const shouldShow = tags.some(tag => activeFilters.has(tag));
+            card.style.display = shouldShow ? '' : 'none';
+        });
+    }
+});
+</script>

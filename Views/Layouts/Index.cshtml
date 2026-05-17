@@ -1,0 +1,38 @@
+@model CarparkManagementSystem.ViewModels.Layouts.LayoutsIndexViewModel
+@{
+    ViewData["Title"] = "Layouts";
+}
+
+<section class="section-shell">
+    <div class="section-shell__heading">
+        <div>
+            <span class="eyebrow">Visual Layouts</span>
+            <h1>Explore each site layout</h1>
+        </div>
+    </div>
+
+    <div class="site-card-grid">
+        @foreach (var site in Model.Sites)
+        {
+            <article class="site-card">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div>
+                        <h2>@site.Name</h2>
+                        <p class="text-muted">@site.TotalSpaces total spaces</p>
+                    </div>
+                    <a class="btn btn-outline-primary btn-sm" asp-action="Details" asp-route-id="@site.SiteId">Open layout</a>
+                </div>
+                <div class="site-breakdown">
+                    <span>Standard: <strong>@site.StandardSpaces</strong></span>
+                    <span>EV: <strong>@site.ElectricChargingSpaces</strong></span>
+                    <span>Disabled: <strong>@site.DisabledSpaces</strong></span>
+                    <span>Visitor: <strong>@site.VisitorSpaces</strong></span>
+                </div>
+                @if (Model.CanEditLayouts)
+                {
+                    <a class="btn btn-link px-0 mt-3" asp-action="Edit" asp-route-id="@site.SiteId">Edit placeholder layout</a>
+                }
+            </article>
+        }
+    </div>
+</section>

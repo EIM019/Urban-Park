@@ -1,0 +1,185 @@
+@model CarparkManagementSystem.ViewModels.Layouts.SpaceLendingFormViewModel
+@using CarparkManagementSystem.Models
+@{
+    ViewData["Title"] = "Lend Spaces — " + Model.SiteName;
+    var activeLendings = ViewBag.ActiveLendings as List<CarparkManagementSystem.ViewModels.Layouts.ActiveLendingViewModel> ?? [];
+}
+
+<section class="hero-panel hero-panel--compact">
+    <div class="hero-panel__content">
+        <span class="eyebrow">Layout management</span>
+        <h1>Lend spaces — @Model.SiteName</h1>
+        <p>
+            Temporarily reassign selected spaces to a different bay type.
+            Managers and receptionists will be notified. Spaces revert automatically when the period ends.
+        </p>
+    </div>
+</section>
+
+<section class="section-shell">
+
+    @* Active lendings table *@
+    @if (activeLendings.Any())
+    {
+        <div class="mb-4">
+            <h5 class="mb-3">Currently active lendings</h5>
+            <div class="table-responsive">
+                <table class="table app-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Space</th>
+                            <th>Original type</th>
+                            <th>Lent to</th>
+                            <th>Reason</th>
+                            <th>Period</th>
+                            <th>Created by</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var lending in activeLendings)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@lending.SpaceNumber</td>
+                                <td>@lending.OriginalType.GetDisplayName()</td>
+                                <td><span class="status-badge status-badge--priority">@lending.LentToType.GetDisplayName()</span></td>
+                                <td>@lending.Reason</td>
+                                <td class="small">
+                                    @lending.StartDateTime.ToString("dd MMM HH:mm")
+                                    – @lending.EndDateTime.ToString("dd MMM HH:mm")
+                                </td>
+                                <td class="small">@lending.CreatedByUserName</td>
+                                <td>
+                                    <form method="post"
+                                          asp-action="RevertLending"
+                                          asp-route-id="@lending.LendingId"
+                                          asp-route-siteId="@Model.SiteId"
+                                          onsubmit="return confirm('Revert this space back to its original type now?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-warning">
+                                            Revert early
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <h5 class="mb-3">Create new lending</h5>
+
+    <form method="post" id="lendingForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="SiteId" />
+        <input type="hidden" asp-for="SiteName" />
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <label asp-for="LendToType" class="form-label"></label>
+                <select asp-for="LendToType" asp-items="Model.SpaceTypeOptions" class="form-select"></select>
+                <span asp-validation-for="LendToType" class="text-danger small"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="StartDateTime" class="form-label"></label>
+                <input asp-for="StartDateTime" type="datetime-local" class="form-control" />
+                <span asp-validation-for="StartDateTime" class="text-danger small"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="EndDateTime" class="form-label"></label>
+                <input asp-for="EndDateTime" type="datetime-local" class="form-control" />
+                <span asp-validation-for="EndDateTime" class="text-danger small"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Reason" class="form-label"></label>
+                <textarea asp-for="Reason" class="form-control" rows="2"
+                          placeholder="e.g. Conference for disabled visitors — extra disabled bays needed 05 May"></textarea>
+                <span asp-validation-for="Reason" class="text-danger small"></span>
+            </div>
+        </div>
+
+        @* Space selection grid *@
+        <h6 class="mb-2">Select spaces to lend</h6>
+        <p class="text-muted small mb-3">
+            Click spaces to select them. Only active, non-currently-lent spaces can be selected.
+        </p>
+
+        <div class="d-flex gap-2 flex-wrap mb-3">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectByType('Standard')">Select all Standard</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectByType('Disabled')">Select all Disabled</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectByType('Visitor')">Select all Visitor</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">Clear selection</button>
+        </div>
+
+        <div class="lending-space-grid mb-4">
+            @foreach (var space in Model.AvailableSpaces)
+            {
+                var cssClass = space.IsCurrentlyLent ? "space-tile space-tile--lent" :
+                               !space.IsActive       ? "space-tile space-tile--inactive" :
+                               space.CurrentType == ParkingSpaceType.Standard        ? "space-tile space-tile--standard" :
+                               space.CurrentType == ParkingSpaceType.Disabled        ? "space-tile space-tile--disabled" :
+                               space.CurrentType == ParkingSpaceType.ElectricCharging? "space-tile space-tile--ev" :
+                                                                                       "space-tile space-tile--visitor";
+                var selectable = space.IsActive && !space.IsCurrentlyLent;
+                <div class="@cssClass @(selectable ? "selectable" : "not-selectable")"
+                     data-space-id="@space.ParkingSpaceId"
+                     data-space-type="@space.CurrentType"
+                     onclick="@(selectable ? "toggleSpace(this)" : "")">
+                    <span class="space-tile__number">@space.SpaceNumber</span>
+                    <span class="space-tile__type">@space.CurrentType.GetDisplayName()</span>
+                    @if (space.IsCurrentlyLent)
+                    {
+                        <span class="space-tile__status">Lent</span>
+                    }
+                    else if (!space.IsActive)
+                    {
+                        <span class="space-tile__status">Inactive</span>
+                    }
+                </div>
+                @* Hidden checkbox that gets submitted *@
+                <input type="checkbox"
+                       name="SelectedSpaceIds"
+                       value="@space.ParkingSpaceId"
+                       id="space_@space.ParkingSpaceId"
+                       class="space-checkbox d-none"
+                       @(selectable ? "" : "disabled") />
+            }
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Lend selected spaces</button>
+            <a class="btn btn-outline-secondary"
+               asp-action="Details" asp-route-id="@Model.SiteId">Cancel</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function toggleSpace(tile) {
+            const spaceId = tile.dataset.spaceId;
+            const checkbox = document.getElementById('space_' + spaceId);
+            tile.classList.toggle('space-tile--selected');
+            checkbox.checked = tile.classList.contains('space-tile--selected');
+        }
+
+        function selectByType(type) {
+            document.querySelectorAll('.space-tile.selectable').forEach(tile => {
+                if (tile.dataset.spaceType === type) {
+                    tile.classList.add('space-tile--selected');
+                    document.getElementById('space_' + tile.dataset.spaceId).checked = true;
+                }
+            });
+        }
+
+        function clearSelection() {
+            document.querySelectorAll('.space-tile--selected').forEach(tile => {
+                tile.classList.remove('space-tile--selected');
+                document.getElementById('space_' + tile.dataset.spaceId).checked = false;
+            });
+        }
+    </script>
+}

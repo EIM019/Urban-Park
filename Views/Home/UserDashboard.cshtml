@@ -1,0 +1,112 @@
+@model CarparkManagementSystem.ViewModels.Home.UserDashboardViewModel
+@{
+    ViewData["Title"] = "User Dashboard";
+}
+
+<section class="hero-panel">
+    <div class="hero-panel__content">
+        <span class="eyebrow">User dashboard</span>
+        <h1>Manage your bookings and search available parking.</h1>
+        <p>
+            View your booking history, check availability for your next visit, and stay informed about the sites you use.
+        </p>
+        <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" asp-controller="Availability" asp-action="Search">Search availability</a>
+            <a class="btn btn-outline-light btn-lg" asp-controller="Bookings" asp-action="Index">My bookings</a>
+        </div>
+    </div>
+</section>
+
+<section class="stats-grid">
+    <article class="metric-card">
+        <span class="metric-card__label">Sites</span>
+        <strong>@Model.SiteCount</strong>
+        <p>All active carpark locations in the system.</p>
+    </article>
+    <article class="metric-card">
+        <span class="metric-card__label">Total spaces</span>
+        <strong>@Model.TotalSpaceCount</strong>
+        <p>Includes standard, EV, disabled, and visitor bays across all sites.</p>
+    </article>
+    <article class="metric-card">
+        <span class="metric-card__label">Available in next 8 hours</span>
+        <strong>@Model.AvailableSpaceCount</strong>
+        <p>Spaces not already reserved in the next 8-hour window.</p>
+    </article>
+</section>
+
+<section class="section-shell">
+    <div class="section-shell__heading">
+        <div>
+            <span class="eyebrow">Booking history</span>
+            <h2>Your recent bookings</h2>
+        </div>
+    </div>
+    <div class="stats-grid">
+        <article class="metric-card">
+            <span class="metric-card__label">Upcoming bookings</span>
+            <strong>@Model.UpcomingBookingCount</strong>
+            <p>Bookings starting today or in the future.</p>
+        </article>
+        <article class="metric-card">
+            <span class="metric-card__label">Past bookings</span>
+            <strong>@Model.PastBookingCount</strong>
+            <p>Bookings that have already finished.</p>
+        </article>
+    </div>
+
+    <div class="table-responsive mt-4">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Site</th>
+                    <th>Space</th>
+                    <th>Name</th>
+                    <th>Booking type</th>
+                    <th>Window</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var booking in Model.MyBookings)
+                {
+                    var canCancel = booking.Status == CarparkManagementSystem.Models.BookingStatus.Active
+                                    && !booking.IsPriority
+                                    && booking.EndDateTime > DateTime.Now;
+                    <tr>
+                        <td>@booking.SiteName</td>
+                        <td>@booking.SpaceNumber</td>
+                        <td>@booking.RequesterName</td>
+                        <td>@booking.PartyType.GetDisplayName()</td>
+                        <td>@booking.StartDateTime.ToString("dd MMM HH:mm") – @booking.EndDateTime.ToString("dd MMM HH:mm")</td>
+                        <td>
+                            @if (booking.IsPriority)
+                            {
+                                <span class="status-badge status-badge--priority">Priority</span>
+                            }
+                            <span class="status-badge">@booking.Status.GetDisplayName()</span>
+                        </td>
+                        <td>
+                            @if (canCancel)
+                            {
+                                <form method="post"
+                                      asp-controller="Bookings"
+                                      asp-action="Cancel"
+                                      asp-route-id="@booking.Id"
+                                      onsubmit="return confirm('Cancel your booking for @booking.RequesterName at @booking.SiteName?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">—</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

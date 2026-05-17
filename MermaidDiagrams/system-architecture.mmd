@@ -1,0 +1,37 @@
+%% System architecture for Carpark Management System
+%% Edit in Mermaid app or any Mermaid editor.
+
+flowchart TD
+    Browser[Browser]
+    subgraph WebApp["ASP.NET Core MVC App"]
+        Program["Program.cs"]
+        subgraph Controllers[Controllers]
+            HomeController["HomeController"]
+            AvailabilityController["AvailabilityController"]
+            BookingsController["BookingsController"]
+            LayoutsController["LayoutsController"]
+        end
+        subgraph Services[Services]
+            BookingService["BookingService"]
+            LayoutService["LayoutService"]
+        end
+        DbContext["ApplicationDbContext"]
+        Auth["ASP.NET Identity"]
+        Views["Razor Views"]
+        Static["Static Assets (wwwroot)"]
+        SeedData["SeedData"]
+    end
+    Database["SQLite app.db"]
+
+    Browser -->|HTTP/HTTPS| Controllers
+    Controllers -->|invoke| Services
+    Controllers -->|render| Views
+    Controllers -.->|auth/roles| Auth
+    Services -->|query/update| DbContext
+    DbContext -->|persists| Database
+    DbContext -->|stores users/roles| Auth
+    Program -->|configures| Controllers
+    Program -->|registers DI| Services
+    Program -->|configures DB| DbContext
+    Program -->|starts app| SeedData
+    Views --> Static

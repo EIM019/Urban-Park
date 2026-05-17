@@ -1,0 +1,15 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+app.db
+app.db-*
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+logs/
+*.log
+.env

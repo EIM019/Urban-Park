@@ -1,0 +1,88 @@
+@model CarparkManagementSystem.ViewModels.Home.ReceptionistDashboardViewModel
+@{
+    ViewData["Title"] = "Receptionist Dashboard";
+}
+
+<section class="hero-panel">
+    <div class="hero-panel__content">
+        <span class="eyebrow">Receptionist workspace</span>
+        <h1>Manage visitor parking and front desk bookings.</h1>
+        <p>
+            Quickly book visitor bays, confirm arrival details, and keep availability visible for incoming guests.
+        </p>
+        <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" asp-controller="Bookings" asp-action="Index">Manage bookings</a>
+            <a class="btn btn-outline-light btn-lg" asp-controller="Availability" asp-action="Search">Search availability</a>
+        </div>
+        <a class="btn btn-outline-light btn-lg position-relative"
+            asp-controller="Notifications" asp-action="Index">
+                Notifications
+                @if (Model.UnreadNotificationCount > 0)
+                {
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        @Model.UnreadNotificationCount
+                    </span>
+                }
+        </a>
+    </div>
+</section>
+
+<section class="stats-grid">
+    <article class="metric-card">
+        <span class="metric-card__label">Visitor bookings today</span>
+        <strong>@Model.VisitorBookingsToday</strong>
+        <p>Active visitor bookings scheduled for today.</p>
+    </article>
+    <article class="metric-card">
+        <span class="metric-card__label">Open visitor bookings</span>
+        <strong>@Model.OpenVisitorBookings</strong>
+        <p>Future visitor reservations that still need to be managed.</p>
+    </article>
+    <article class="metric-card">
+        <span class="metric-card__label">Available visitor bays</span>
+        <strong>@Model.AvailableVisitorSpaces</strong>
+        <p>Visitor spaces available for the next 8 hours.</p>
+    </article>
+</section>
+
+<section class="section-shell">
+    <div class="section-shell__heading">
+        <div>
+            <span class="eyebrow">Visitor bookings</span>
+            <h2>Upcoming visitor reservations</h2>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Site</th>
+                    <th>Space</th>
+                    <th>Name</th>
+                    <th>Booking type</th>
+                    <th>Window</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var booking in Model.UpcomingVisitorBookings)
+                {
+                    <tr>
+                        <td>@booking.SiteName</td>
+                        <td>@booking.SpaceNumber</td>
+                        <td>@booking.RequesterName</td>
+                        <td>@booking.PartyType.GetDisplayName()</td>
+                        <td>@booking.StartDateTime.ToString("dd MMM HH:mm") - @booking.EndDateTime.ToString("dd MMM HH:mm")</td>
+                        <td>
+                            @if (booking.IsPriority)
+                            {
+                                <span class="status-badge status-badge--priority">Priority</span>
+                            }
+                            <span class="status-badge">@booking.Status.GetDisplayName()</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

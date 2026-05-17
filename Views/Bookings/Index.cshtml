@@ -1,0 +1,118 @@
+@model CarparkManagementSystem.ViewModels.Bookings.BookingsListViewModel
+@using CarparkManagementSystem.Models
+@{
+    ViewData["Title"] = "Bookings";
+}
+
+<section class="section-shell">
+    <div class="section-shell__heading">
+        <div>
+            <span class="eyebrow">Bookings</span>
+            <h1>Manage current and cancelled bookings</h1>
+        </div>
+        @if (Model.CanManageBookings)
+        {
+            <a class="btn btn-primary" asp-controller="Availability" asp-action="Search">Create a new booking</a>
+        }
+    </div>
+
+    @if (TempData["StatusMessage"] is string statusMessage)
+    {
+        <div class="alert alert-info shadow-sm">@statusMessage</div>
+    }
+
+    <form method="get" class="row g-3">
+        <div class="col-md-4">
+            <label asp-for="SiteId" class="form-label">Site</label>
+            <select asp-for="SiteId" asp-items="Model.SiteOptions" class="form-select">
+                <option value="">All sites</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="StatusFilter" class="form-label">Status</label>
+            <select asp-for="StatusFilter" asp-items="Model.StatusOptions" class="form-select"></select>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <button type="submit" class="btn btn-outline-primary">Apply filters</button>
+        </div>
+    </form>
+</section>
+
+<section class="section-shell">
+    <div class="table-responsive">
+        <table class="table app-table align-middle">
+            <thead>
+                <tr>
+                    <th>Site / Space</th>
+                    <th>Person</th>
+                    <th>Reference</th>
+                    <th>Time Window</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            @if (Model.Bookings.Count == 0)
+            {
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">No bookings match the current filter.</td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var booking in Model.Bookings)
+                {
+                    <tr>
+                        <td>
+                            <strong>@booking.SiteName</strong>
+                            <div class="text-muted">@booking.SpaceNumber · @booking.SpaceType.GetDisplayName()</div>
+                        </td>
+                        <td>
+                            <strong>@booking.RequesterName</strong>
+                            <div class="text-muted">@booking.PartyType.GetDisplayName()</div>
+                        </td>
+                        <td>
+                            @if (booking.PartyType == BookingPartyType.Employee)
+                            {
+                                <span>Employee No: @booking.EmployeeNumber</span>
+                            }
+                            else
+                            {
+                                <span>Company: @booking.Company</span>
+                            }
+                            <div class="text-muted">@booking.ContactNumber</div>
+                        </td>
+                        <td>@booking.StartDateTime.ToString("dd MMM yyyy HH:mm") - @booking.EndDateTime.ToString("dd MMM yyyy HH:mm")</td>
+                        <td>
+                            @if (booking.IsPriority)
+                            {
+                                <span class="status-badge status-badge--priority">Priority</span>
+                            }
+                            <span class="status-badge">@booking.Status.GetDisplayName()</span>
+                        </td>
+                        <td class="text-end">
+                            @if (Model.CanManageBookings)
+                            {
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@booking.Id">Edit</a>
+                                    @if (booking.Status == BookingStatus.Active)
+                                    {
+                                        <form asp-action="Cancel" method="post">
+                                            <input type="hidden" name="id" value="@booking.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Cancel</button>
+                                        </form>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted">View only</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

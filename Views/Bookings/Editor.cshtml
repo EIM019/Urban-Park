@@ -1,0 +1,203 @@
+@model CarparkManagementSystem.ViewModels.Bookings.BookingFormViewModel
+@using CarparkManagementSystem.Models
+@{
+    ViewData["Title"] = Model.IsEditing ? "Edit Booking" : "Create Booking";
+}
+
+<section class="section-shell">
+    <div class="section-shell__heading">
+        <div>
+            <span class="eyebrow">Booking Form</span>
+            <h1>@ViewData["Title"]</h1>
+        </div>
+        <a class="btn btn-outline-primary" asp-controller="Bookings" asp-action="Index">Back to bookings</a>
+    </div>
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <article class="info-card">
+                <p class="card-label">Selected Bay</p>
+                <h2>@Model.SpaceNumber</h2>
+                <p class="mb-1">@Model.SiteName</p>
+                <p class="text-muted mb-0">@Model.SpaceType.GetDisplayName()</p>
+            </article>
+        </div>
+        <div class="col-lg-8">
+            <form method="post" asp-action="@(Model.IsEditing ? "Edit" : "Create")" class="row g-3">
+                @if (Model.IsEditing)
+                {
+                    <input type="hidden" asp-for="Id" />
+                }
+                <input type="hidden" asp-for="IsEditing" />
+                <input type="hidden" asp-for="SiteId" />
+                <input type="hidden" asp-for="SiteName" />
+                <input type="hidden" asp-for="ParkingSpaceId" />
+                <input type="hidden" asp-for="SpaceNumber" />
+                <input type="hidden" asp-for="SpaceType" />
+                <input type="hidden" asp-for="CanSetPriority" />
+                <input type="hidden" asp-for="StartDateTime" id="StartDateTime" />
+                <input type="hidden" asp-for="EndDateTime" id="EndDateTime" />
+
+                <div class="col-md-6">
+                    <label class="form-label">Start date</label>
+                    <input type="date"
+                           id="startDate"
+                           class="form-control"
+                           value="@Model.StartDateTime.ToString("yyyy-MM-dd")" />
+                    <span asp-validation-for="StartDateTime" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Start time</label>
+                    <input type="time"
+                           id="startTime"
+                           class="form-control"
+                           value="@Model.StartDateTime.ToString("HH:mm")" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Duration</label>
+                    <select id="duration" class="form-select" required>
+                        <option value="" disabled selected>Select duration</option>
+                        <option value="0.5">30 minutes</option>
+                        <option value="1">1 hour</option>
+                        <option value="2">2 hours</option>
+                        <option value="3">3 hours</option>
+                        <option value="4">4 hours</option>
+                        <option value="5">5 hours</option>
+                        <option value="6">6 hours</option>
+                        <option value="7">7 hours</option>
+                        <option value="8">8 hours</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">End date &amp; time</label>
+                    <input type="text"
+                           id="endDisplay"
+                           class="form-control bg-light"
+                           readonly
+                           placeholder="Calculated automatically" />
+                    <span asp-validation-for="EndDateTime" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="PartyType" class="form-label"></label>
+                    <select asp-for="PartyType" asp-items="Model.PartyTypeOptions" class="form-select"></select>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="RequesterName" class="form-label"></label>
+                    <input asp-for="RequesterName" class="form-control" />
+                    <span asp-validation-for="RequesterName" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="EmployeeNumber" class="form-label"></label>
+                    <input asp-for="EmployeeNumber" class="form-control" />
+                    <span asp-validation-for="EmployeeNumber" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Company" class="form-label"></label>
+                    <input asp-for="Company" class="form-control" />
+                    <span asp-validation-for="Company" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="ContactNumber" class="form-label"></label>
+                    <input asp-for="ContactNumber" class="form-control" />
+                    <span asp-validation-for="ContactNumber" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    @if (Model.CanSetPriority)
+                    {
+                        <div class="form-check form-switch">
+                            <input asp-for="IsPriority" class="form-check-input" />
+                            <label asp-for="IsPriority" class="form-check-label"></label>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="info-card info-card--muted w-100">
+                            <p class="mb-0">Only the facilities manager can set priority bookings.</p>
+                        </div>
+                    }
+                </div>
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Save booking</button>
+                    <a class="btn btn-outline-secondary" asp-controller="Bookings" asp-action="Index">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const startDateInput = document.getElementById('startDate');
+        const startTimeInput = document.getElementById('startTime');
+        const durationSelect = document.getElementById('duration');
+        const endDisplay     = document.getElementById('endDisplay');
+        const hiddenStart    = document.getElementById('StartDateTime');
+        const hiddenEnd      = document.getElementById('EndDateTime');
+
+        (function preselectDuration() {
+            const isEditing = @(Model.IsEditing ? "true" : "false");
+            if (!isEditing) {
+                // New booking — always show placeholder
+                durationSelect.value = '';
+                return;
+            }
+
+            // Edit booking — find and select the matching duration
+            const start = new Date('@Model.StartDateTime.ToString("yyyy-MM-ddTHH:mm")');
+            const end   = new Date('@Model.EndDateTime.ToString("yyyy-MM-ddTHH:mm")');
+            if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                const diffHours = (end - start) / 36e5;
+                const opt = [...durationSelect.options]
+                    .find(o => o.value !== '' && parseFloat(o.value) === diffHours);
+                if (opt) {
+                    opt.selected = true;
+                } else {
+                    durationSelect.value = ''; // no match — fall back to placeholder
+                }
+            }
+        })();
+
+        function pad(n) { return String(n).padStart(2, '0'); }
+
+        function formatLocal(date) {
+            const months = ['Jan','Feb','Mar','Apr','May','Jun',
+                            'Jul','Aug','Sep','Oct','Nov','Dec'];
+            return `${pad(date.getDate())} ${months[date.getMonth()]} ${date.getFullYear()} ` +
+                   `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        function toLocalISOString(date) {
+            return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}` +
+                   `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        function recalculate() {
+            const dateVal = startDateInput.value;
+            const timeVal = startTimeInput.value;
+            const hours   = parseFloat(durationSelect.value);
+
+            if (!dateVal || !timeVal || isNaN(hours)) return;
+
+            const start = new Date(`${dateVal}T${timeVal}`);
+            if (isNaN(start.getTime())) return;
+
+            const end = new Date(start.getTime() + hours * 60 * 60 * 1000);
+
+            hiddenStart.value = toLocalISOString(start);
+            hiddenEnd.value   = toLocalISOString(end);
+            endDisplay.value  = formatLocal(end);
+        }
+
+        startDateInput.addEventListener('change', recalculate);
+        startTimeInput.addEventListener('change', recalculate);
+        durationSelect.addEventListener('change', recalculate);
+
+        recalculate();
+    </script>
+}

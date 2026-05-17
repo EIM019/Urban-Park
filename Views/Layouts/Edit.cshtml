@@ -1,0 +1,240 @@
+@model CarparkManagementSystem.ViewModels.Layouts.LayoutEditViewModel
+@using CarparkManagementSystem.Models
+@{
+    ViewData["Title"] = $"Edit {Model.SiteName} Layout";
+}
+
+<section class="section-shell">
+    <div class="section-shell__heading">
+        <div>
+            <span class="eyebrow">Layout Editor</span>
+            <h1>@Model.SiteName</h1>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-warning"
+               asp-action="LendSpaces"
+               asp-route-siteId="@Model.SiteId">Lend spaces</a>
+            <a class="btn btn-outline-primary"
+               asp-action="Details"
+               asp-route-id="@Model.SiteId">Back to layout</a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] is string successMsg)
+    {
+        <div class="alert alert-success shadow-sm">@successMsg</div>
+    }
+    @if (TempData["ErrorMessage"] is string errorMsg)
+    {
+        <div class="alert alert-danger shadow-sm">@errorMsg</div>
+    }
+
+    @* Summary counts *@
+    <div class="stats-grid mb-4">
+        <article class="metric-card">
+            <span class="metric-card__label">Total spaces</span>
+            <strong>@Model.Spaces.Count</strong>
+        </article>
+        <article class="metric-card">
+            <span class="metric-card__label">Active</span>
+            <strong>@Model.Spaces.Count(s => s.IsActive)</strong>
+        </article>
+        <article class="metric-card @(Model.Spaces.Count(s => !s.IsActive) > 0 ? "metric-card--warning" : "")">
+            <span class="metric-card__label">Inactive</span>
+            <strong>@Model.Spaces.Count(s => !s.IsActive)</strong>
+        </article>
+        <article class="metric-card @(Model.Spaces.Count(s => s.Row == 1 && s.Column == 1) > 1 ? "metric-card--warning" : "")">
+            <span class="metric-card__label">Unpositioned</span>
+            <strong>@Model.Spaces.Count(s => s.Row == 0 && s.Column == 0)</strong>
+            <p>Spaces at row 0 / col 0 need positions assigned.</p>
+        </article>
+    </div>
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    @* Filter bar *@
+    <div class="d-flex gap-2 flex-wrap mb-3 align-items-center">
+        <span class="text-muted small me-1">Filter:</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary active"
+                data-table-filter="all" onclick="filterRows('all', this)">All</button>
+        <button type="button" class="btn btn-sm btn-outline-danger"
+                data-table-filter="inactive" onclick="filterRows('inactive', this)">Inactive only</button>
+        <button type="button" class="btn btn-sm btn-outline-warning"
+                data-table-filter="unpositioned" onclick="filterRows('unpositioned', this)">Unpositioned only</button>
+        <button type="button" class="btn btn-sm btn-outline-primary"
+                data-table-filter="active" onclick="filterRows('active', this)">Active only</button>
+
+        <div class="ms-auto">
+            <input type="text"
+                   id="spaceSearch"
+                   class="form-control form-control-sm"
+                   placeholder="Search space number..."
+                   oninput="searchSpaces(this.value)" />
+        </div>
+    </div>
+
+    <form asp-action="Edit" asp-controller="Layouts" asp-route-id="@Model.SiteId" method="post">
+     @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="SiteId" />
+        <input type="hidden" asp-for="SiteName" />
+
+        
+
+
+            <div class="table-responsive">
+                <table class="table app-table align-middle" id="editTable">
+                    <thead>
+                        <tr>
+                            <th>Space</th>
+                            <th>Type</th>
+                            <th>Row</th>
+                            <th>Column</th>
+                            <th>Active</th>
+                            <th>Background</th>
+                            <th>Text Color</th>
+                            <th>Font</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                   @for (var index = 0; index < Model.Spaces.Count; index++)
+                    {
+                        var space = Model.Spaces[index];
+                        var rowClass = !space.IsActive ? "table-warning" : "";
+
+                        <tr class="edit-row @rowClass"
+                            data-space="@space.SpaceNumber.ToLower()"
+                            data-active="@space.IsActive.ToString().ToLower()"
+                            data-positioned="@((space.Row > 0 && space.Column > 0).ToString().ToLower())">
+
+                            <td>
+                                <input type="hidden" asp-for="Spaces[index].ParkingSpaceId" />
+                                <input type="hidden" asp-for="Spaces[index].SpaceNumber" />
+                                <input type="hidden" asp-for="Spaces[index].SpaceType" />
+                                <strong>@space.SpaceNumber</strong>
+                            </td>
+
+                            <td>
+                                @{
+                                    var typeBadge = space.SpaceType switch
+                                    {
+                                        ParkingSpaceType.ElectricCharging => "status-badge--ev",
+                                        ParkingSpaceType.Disabled         => "status-badge--disabled",
+                                        ParkingSpaceType.Visitor          => "status-badge--visitor",
+                                        _ => ""
+                                    };
+                                }
+                                <span class="status-badge @typeBadge">
+                                    @space.SpaceType.GetDisplayName()
+                                </span>
+                            </td>
+
+                            <!-- Row -->
+                            <td style="width:100px;">
+                                <input asp-for="Spaces[index].Row"
+                                    class="form-control form-control-sm" />
+                            </td>
+
+                            <!-- Column -->
+                            <td style="width:100px;">
+                                <input asp-for="Spaces[index].Column"
+                                    class="form-control form-control-sm" />
+                            </td>
+
+                            <!-- Active -->
+                            <td>
+                                <div class="form-check form-switch">
+                                    <input asp-for="Spaces[index].IsActive"
+                                        class="form-check-input" />
+                                </div>
+                            </td>
+
+                            <!-- Background -->
+                            <td style="width:120px;">
+                                <input asp-for="Spaces[index].CardBackgroundColor"
+                                    type="color"
+                                    class="form-control form-control-color" />
+                            </td>
+
+                            <!-- Text Color -->
+                            <td style="width:120px;">
+                                <input asp-for="Spaces[index].CardTextColor"
+                                    type="color"
+                                    class="form-control form-control-color" />
+                            </td>
+
+                            <!-- Font -->
+                            <td style="width:140px;">
+                                <select asp-for="Spaces[index].CardFontWeight"
+                                        class="form-select form-select-sm">
+                                    <option value="">Default</option>
+                                    <option value="400">Normal</option>
+                                    <option value="600">Semi-bold</option>
+                                    <option value="700">Bold</option>
+                                    <option value="800">Extra bold</option>
+                                </select>
+                            </td>
+
+                            <!-- Actions -->
+                            <td>
+                                @if (space.IsActive)
+                                {
+                                    <a class="btn btn-sm btn-outline-danger"
+                                    asp-action="DeactivateSpace"
+                                    asp-route-spaceId="@space.ParkingSpaceId">
+                                        Deactivate
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">
+                                        Inactive — toggle above to reactivate
+                                    </span>
+                                }
+                            </td>
+
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex gap-2 mt-3">
+                <button type="submit" class="btn btn-primary">Save layout changes</button>
+                <a class="btn btn-outline-secondary"
+                asp-action="Details" asp-route-id="@Model.SiteId">Cancel</a>
+            </div>
+   
+
+
+       
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Filter rows by status
+        function filterRows(filter, btn) {
+            document.querySelectorAll('[data-table-filter]')
+                .forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            document.querySelectorAll('.edit-row').forEach(row => {
+                let show = true;
+                if (filter === 'inactive')     show = row.dataset.active === 'false';
+                if (filter === 'active')       show = row.dataset.active === 'true';
+                if (filter === 'unpositioned') show = row.dataset.positioned === 'false';
+                row.style.display = show ? '' : 'none';
+            });
+        }
+
+        // Search by space number
+        function searchSpaces(query) {
+            const q = query.toLowerCase().trim();
+            document.querySelectorAll('.edit-row').forEach(row => {
+                row.style.display = row.dataset.space.includes(q) ? '' : 'none';
+            });
+        }
+    </script>
+}
